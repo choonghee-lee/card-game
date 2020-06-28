@@ -16,6 +16,8 @@ class Game:
         # self.first = None
         self.current_bet = 0
         self.ranks = []
+        self.choices = None
+        self.choice = None
         self.__init_objects()
         self.__init_status()
 
@@ -23,18 +25,37 @@ class Game:
         random.shuffle(self.cards)
         self.__distribute_cards()
         self.__retrieve_bet_from_players()
-        self.__make_players_bet()
-        self.__distribute_cards()
-        self.__make_players_bet()
-        self.print()
+        index = random.randint(0, len(self.choices) - 1)
+        self.__check_rank()
+        self.__make_players_bet(self.choices[index])
         self.__retrieve_cards()
-        print("================================")
-        self.print()
 
+    def __check_rank(self):
+        current_rank = []
+        player_comb = None
+        for player in self.players:
+            if player.cards[0].month < player.cards[1].month:
+                player_comb = (
+                    str(player.cards[0].month), player.cards[0].kind,
+                    str(player.cards[1].month), player.cards[1].kind
+                ) 
+            else:
+                player_comb = (
+                    str(player.cards[1].month), player.cards[1].kind,
+                    str(player.cards[0].month), player.cards[0].kind
+                )
+            print(player_comb)
+            for rank in self.ranks:
+                if player_comb in rank.combination:
+                    current_rank.append(rank)
+                    print(rank.name, rank.ranking)
+                    break
+        print(len(current_rank))
         
     # 각 플레이어에게 카드 한 장 분배
     def __distribute_cards(self):
         for player in self.players:
+            player.keep_card(self.cards.pop())
             player.keep_card(self.cards.pop())
 
     # 모든 플레이어로 부터 카드 두 장씩 회수
@@ -50,30 +71,17 @@ class Game:
             self.current_bet += Game.BET
 
     # 배팅
-    def __make_players_bet(self):
-        choices = [
-            Game.BET, Game.BET, Game.BET, Game.BET, Game.BET, 
-            Game.BET * 2, Game.BET * 2, Game.BET * 2, Game.BET * 2,
-            Game.BET, Game.BET, Game.BET, Game.BET, Game.BET,
-            Game.BET * 3, Game.BET * 3, Game.BET * 3, 
-            Game.BET, Game.BET, Game.BET, Game.BET, Game.BET,
-            Game.BET * 5, Game.BET * 5, 
-            Game.BET, Game.BET, Game.BET, Game.BET, Game.BET,
-            Game.BET * 10, 
-            Game.BET, Game.BET, Game.BET, Game.BET, Game.BET,
-            'ALL-IN'
-         ]
-        index = random.randint(0, len(choices)-1)
+    def __make_players_bet(self, bet):
         for player in self.players:
-            money = player.bet_money(choices[index])
+            money = player.bet_money(bet)
             self.current_bet += money
 
-    def print(self):
-        for card in self.cards:
-            print(card.month, card.kind)
+    # def print(self):
+        # for card in self.cards:
+        #     print(card.month, card.kind)
 
-        for player in self.players:
-            print(player.kind, player.money)
+        # for player in self.players:
+        #     print(player.kind, player.money)
 
         # for rank in self.ranks:
         #     print(rank.name, rank.ranking, rank.combination)
@@ -88,6 +96,19 @@ class Game:
         for i in range(1, 5):
             self.players.append(Player(kind=Player.KIND_CPU+str(i)))
         self.players.append(Player(kind=Player.KIND_PLAYER))
+
+        self.choices = [
+            Game.BET, Game.BET, Game.BET, Game.BET, Game.BET, 
+            Game.BET * 2, Game.BET * 2, Game.BET * 2, Game.BET * 2,
+            Game.BET, Game.BET, Game.BET, Game.BET, Game.BET,
+            Game.BET * 3, Game.BET * 3, Game.BET * 3, 
+            Game.BET, Game.BET, Game.BET, Game.BET, Game.BET,
+            Game.BET * 5, Game.BET * 5, 
+            Game.BET, Game.BET, Game.BET, Game.BET, Game.BET,
+            Game.BET * 10, 
+            Game.BET, Game.BET, Game.BET, Game.BET, Game.BET,
+            'ALL-IN'
+         ] 
 
     def __init_status(self):
 
