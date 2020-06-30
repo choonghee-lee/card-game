@@ -22,16 +22,38 @@ class Game:
         self.__init_status()
 
     def loop(self):
-        random.shuffle(self.cards)
-        self.__distribute_cards()
-        self.__retrieve_bet_from_players()
-        index = random.randint(0, len(self.choices) - 1)
-        self.__check_rank()
-        self.__make_players_bet(self.choices[index])
-        self.__retrieve_cards()
+        while True:
+            random.shuffle(self.cards)
+            self.__distribute_cards()
+            # self.__retrieve_bet_from_players()
+            index = random.randint(0, len(self.choices) - 1)
+            winners_index, current_ranks = self.__check_rank()
+            if winners_index == -1:
+                print('*** 멍텅구리 구사 재경기 ***')
+                self.__print_result(winners_index, current_ranks)
+            elif winners_index == -2:
+                print('*** 구사 재경기 ***')
+                self.__print_result(winners_index, current_ranks)
+            elif winners_index == -5:
+                print('*** 무승부 재경기 ***')
+                self.__print_result(winners_index, current_ranks)
+            else:
+                print('*** 축하합니다 ***')
+                for i, player in enumerate(self.players):
+                    if i == winners_index:
+                        print(player.kind, current_ranks[i].name, " ===> 우승 !!")
+                    else:
+                        print(player.kind, current_ranks[i].name)
+            # self.__make_players_bet(self.choices[index])
+            self.__retrieve_cards()
+            input()
+
+    def __print_result(self, winners_index, current_ranks):
+        for i, player in enumerate(self.players):
+            print(player.kind, current_ranks[i].name)
 
     def __check_rank(self):
-        current_rank = []
+        current_ranks = []
         player_comb = None
         for player in self.players:
             if player.cards[0].month < player.cards[1].month:
@@ -44,13 +66,77 @@ class Game:
                     str(player.cards[1].month), player.cards[1].kind,
                     str(player.cards[0].month), player.cards[0].kind
                 )
-            print(player_comb)
             for rank in self.ranks:
                 if player_comb in rank.combination:
-                    current_rank.append(rank)
-                    print(rank.name, rank.ranking)
+                    current_ranks.append(rank)
                     break
-        print(len(current_rank))
+
+        winners_index = self.__get_winners_index(current_ranks)
+        return winners_index, current_ranks
+
+    def __get_winners_index(self, current_ranks):
+        winners_index = 0
+        winners_rank = current_ranks[0]
+        special_rank = []
+        is_draw = False
+        for i, rank in enumerate(current_ranks):
+            if i == 0:
+                continue
+
+            ranking = int(rank.ranking)
+
+            # 특수패는 따로 모아두기
+            if ranking < 0:
+                special_rank.append((rank, i))
+                continue
+
+            if ranking > 0 and ranking == int(current_ranks[winners_index].ranking):
+                is_draw = True
+                continue
+
+            # 특수패가 아닌 패 중 랭킹 포인트가 가장 낮은 패가 우승
+            if ranking > 0 and ranking < int(current_ranks[winners_index].ranking):
+                winners_index = i
+                winners_rank = rank
+                is_draw = False
+                continue
+
+        # 우승자 패와 특수패 비교해보기
+        for sr in special_rank:
+            ranking = int(sr[0].ranking)
+            winners_ranking = int(winners_rank.ranking)
+            # 암행어사
+            if ranking == -4 and winners_ranking == 2:
+                winners_index = sr[1]
+                winners_ranking = int(sr[0].ranking)
+                is_draw = False
+                return winners_index
+
+            # 멍텅구리 구사
+            if ranking == -1 and winners_ranking >= 4:
+                winners_index = -1
+                winners_ranking = int(sr[0].ranking)
+                is_draw = False
+                return winners_index
+
+            # 땡잡이
+            if ranking == -3 and (winners_ranking <= 12 and winners_ranking >= 4):
+                winners_index = sr[1]
+                winners_ranking = int(sr[0].ranking)
+                is_draw = False
+                continue
+
+            # 사구    
+            if ranking == -2 and winners_ranking >= 13:
+                winners_index = -2
+                winners_ranking = int(sr[0].ranking)
+                is_draw = False
+                continue
+
+        if is_draw:
+            return -5
+        else: 
+            return winners_index
         
     # 각 플레이어에게 카드 한 장 분배
     def __distribute_cards(self):
